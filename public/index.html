@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#16140f" />
+  <meta name="theme-color" content="#f2f2f7" />
   <meta name="robots" content="noindex" />
   <title>工作坊彈幕</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect fill='%2316140f' width='16' height='16'/%3E%3Crect fill='%23e6a322' x='2' y='7' width='12' height='2'/%3E%3C/svg%3E" />
@@ -22,18 +22,17 @@
   </script>
 </head>
 <body>
+  <header class="nav">
+    <div>
+      <p class="eyebrow">今晚現場</p>
+      <h1>把一句話丟上螢幕</h1>
+    </div>
+    <p id="status" class="status pending">連線中</p>
+  </header>
   <main>
-    <header>
-      <div>
-        <p class="eyebrow">今晚現場</p>
-        <h1>把一句話丟上螢幕</h1>
-      </div>
-      <p id="status" class="status pending">連線中</p>
-    </header>
-
     <p id="pause-note" class="pause-note" hidden>主持人已暫停留言</p>
 
-    <section id="gate">
+    <section id="gate" class="card">
       <label for="room-input">房間代碼</label>
       <p class="hint">代碼顯示在投影螢幕的 QR code 下方。</p>
       <input id="room-input" inputmode="latin" autocapitalize="characters" autocomplete="off" maxlength="12" placeholder="例如 1124" />
@@ -41,7 +40,7 @@
       <p id="room-error" class="feedback bad" role="status"></p>
     </section>
 
-    <form id="composer">
+    <form id="composer" class="card">
       <div class="room-row">
         <span>房間 <strong id="room-label">—</strong></span>
         <span id="viewers">在線 0</span>
@@ -69,7 +68,7 @@
       <button id="send" class="send" type="submit">送出彈幕</button>
     </form>
 
-    <section id="react" class="react">
+    <section id="react" class="react card">
       <h2>快速反應</h2>
       <div class="emojis" id="emojis"></div>
       <p class="hint">表情約 1.5 秒可按一次。留言每 3 秒一則。</p>

@@ -2,22 +2,22 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f2f2f7" />
   <meta name="robots" content="noindex" />
   <title>彈幕控制台</title>
   <link rel="stylesheet" href="/css/console.css" />
 </head>
 <body>
+  <header class="nav">
+    <div>
+      <p class="eyebrow">工作坊彈幕</p>
+      <h1>控制台</h1>
+    </div>
+    <p id="status" class="status">連線中</p>
+  </header>
   <main>
-    <header>
-      <div>
-        <p class="eyebrow">工作坊彈幕</p>
-        <h1>控制台</h1>
-      </div>
-      <p id="status" class="status">連線中</p>
-    </header>
-
-    <form id="login">
+    <form id="login" class="card">
       <label for="password">主持人密碼</label>
       <input id="password" type="password" autocomplete="current-password" />
       <button type="submit">記住並連線</button>
@@ -29,14 +29,14 @@
       <button id="interaction" class="big" type="button" aria-pressed="false">暫停互動</button>
       <p id="interaction-note" class="hint">開放時大家可以送留言。暫停互動會拒絕新留言，畫面上已經在飛的字不會停。</p>
 
-      <div class="grid">
+      <div class="group">
         <button id="clear" type="button">清空畫面</button>
-        <button id="danmaku" type="button">隱藏彈幕層</button>
-        <button id="qr" type="button">隱藏 QR</button>
+        <button id="danmaku" type="button" aria-pressed="true">隱藏彈幕層</button>
+        <button id="qr" type="button" aria-pressed="true">隱藏 QR</button>
         <button id="export" type="button">匯出留言 CSV</button>
       </div>
 
-      <form id="filter-form">
+      <form id="filter-form" class="card">
         <label for="word">過濾詞</label>
         <div class="row">
           <input id="word" type="text" maxlength="40" placeholder="加入一個詞" autocomplete="off" />

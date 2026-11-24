@@ -181,6 +181,8 @@
       return;
     }
     $('danmaku').textContent = danmakuOn ? '隱藏彈幕層' : '顯示彈幕層';
+    $('danmaku').classList.toggle('is-off', !danmakuOn);
+    $('danmaku').setAttribute('aria-pressed', String(danmakuOn));
     note(danmakuOn ? '彈幕層已顯示' : '彈幕層已隱藏');
   });
 
@@ -197,6 +199,8 @@
       return;
     }
     $('qr').textContent = qrOn ? '隱藏 QR' : '顯示 QR';
+    $('qr').classList.toggle('is-off', !qrOn);
+    $('qr').setAttribute('aria-pressed', String(qrOn));
     note(qrOn ? 'QR 已顯示' : 'QR 已隱藏');
   });
 
