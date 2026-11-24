@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#16140f" />
+  <meta name="robots" content="noindex" />
+  <title>工作坊彈幕</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect fill='%2316140f' width='16' height='16'/%3E%3Crect fill='%23e6a322' x='2' y='7' width='12' height='2'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/css/join.css" />
+  <script>
+    (function () {
+      var room = new URLSearchParams(location.search).get('room');
+      try {
+        if (!room && !sessionStorage.getItem('danmaku-room')) {
+          document.documentElement.classList.add('needs-room');
+        }
+      } catch (err) {
+        if (!room) document.documentElement.classList.add('needs-room');
+      }
+    })();
+  </script>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <p class="eyebrow">今晚現場</p>
+        <h1>把一句話丟上螢幕</h1>
+      </div>
+      <p id="status" class="status pending">連線中</p>
+    </header>
+
+    <p id="pause-note" class="pause-note" hidden>主持人已暫停留言</p>
+
+    <section id="gate">
+      <label for="room-input">房間代碼</label>
+      <p class="hint">代碼顯示在投影螢幕的 QR code 下方。</p>
+      <input id="room-input" inputmode="latin" autocapitalize="characters" autocomplete="off" maxlength="12" placeholder="例如 1124" />
+      <button id="room-go" type="button">進入</button>
+      <p id="room-error" class="feedback bad" role="status"></p>
+    </section>
+
+    <form id="composer">
+      <div class="room-row">
+        <span>房間 <strong id="room-label">—</strong></span>
+        <span id="viewers">在線 0</span>
+      </div>
+      <label for="text">留言（不會顯示你的名字）</label>
+      <textarea id="text" rows="3" placeholder="最多 50 字" autocomplete="off" spellcheck="false"></textarea>
+      <div class="counter"><span id="count">0</span> / 50</div>
+
+      <fieldset>
+        <legend>字級</legend>
+        <div class="seg" id="sizes" role="group" aria-label="字級"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>顏色</legend>
+        <div class="swatches" id="colors" role="group" aria-label="顏色"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>動畫</legend>
+        <div class="motions" id="motions" role="group" aria-label="動畫"></div>
+      </fieldset>
+
+      <p id="feedback" class="feedback" role="status"></p>
+      <button id="send" class="send" type="submit">送出彈幕</button>
+    </form>
+
+    <section id="react" class="react">
+      <h2>快速反應</h2>
+      <div class="emojis" id="emojis"></div>
+      <p class="hint">表情約 1.5 秒可按一次。留言每 3 秒一則。</p>
+    </section>
+  </main>
+  <noscript><p class="noscript">請開啟 JavaScript 才能送出彈幕。</p></noscript>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/join.js"></script>
+</body>
+</html>

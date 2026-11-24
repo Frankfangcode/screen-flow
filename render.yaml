@@ -1,0 +1,19 @@
+# Render Blueprint: one free Node web service.
+# WebSockets are supported on Render web services. Socket.IO may fall back to
+# HTTP long-polling; both transports are enabled in the server.
+# https://render.com/docs/deploy-node-express-app
+services:
+  - type: web
+    name: workshop-danmaku
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: HOST_PASSWORD
+        sync: false
+      - key: ROOM_CODE
+        value: "1124"

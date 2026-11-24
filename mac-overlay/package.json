@@ -1,0 +1,30 @@
+{
+  "name": "danmaku-overlay",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Transparent click-through danmaku overlay for the projector Mac.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg --publish never",
+    "icon": "node make-icon.js"
+  },
+  "devDependencies": {
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "tw.edu.workshop.danmaku-overlay",
+    "productName": "Danmaku Overlay",
+    "directories": { "output": "dist" },
+    "files": ["main.js", "preload.js", "setup.html", "icon.png", "trayTemplate.png"],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": ["dmg"],
+      "icon": "icon.png",
+      "identity": null,
+      "gatekeeperAssess": false
+    },
+    "dmg": { "title": "Danmaku Overlay" }
+  }
+}

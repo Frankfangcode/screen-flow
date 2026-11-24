@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <title>彈幕疊加</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0;
+      font-family: "PingFang TC", "Noto Sans CJK TC", "Microsoft JhengHei", sans-serif;
+      background: #16140f;
+      color: #f3ecdf;
+    }
+    main { padding: 28px 24px 20px; }
+    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -0.03em; }
+    p { margin: 0; color: #b7ab99; line-height: 1.5; font-size: 14px; }
+    label { display: block; margin: 18px 0 6px; font-size: 13px; color: #b7ab99; }
+    input, select, button { font: inherit; }
+    input, select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      font-size: 16px;
+      color: #f3ecdf;
+      background: #100e0c;
+      border: 1px solid rgba(243, 236, 223, 0.2);
+    }
+    button {
+      width: 100%;
+      margin-top: 18px;
+      min-height: 48px;
+      border: 0;
+      background: #e6a322;
+      color: #16140f;
+      font-weight: 800;
+      font-size: 17px;
+      cursor: pointer;
+    }
+    .err { min-height: 1.3em; margin-top: 12px; color: #ffb4a8; }
+    .keys { margin-top: 18px; }
+    kbd {
+      padding: 1px 5px;
+      border: 1px solid rgba(243, 236, 223, 0.3);
+      font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>彈幕疊加</h1>
+    <p>開一個透明、點擊穿透、永遠在最前面的視窗，讓彈幕浮在 Keynote 或 PowerPoint 上面。</p>
+    <label for="url">伺服器網址</label>
+    <input id="url" type="url" spellcheck="false" placeholder="http://127.0.0.1:4721/screen?overlay=1" />
+    <label for="display">顯示在哪一個螢幕</label>
+    <select id="display"></select>
+    <p class="err" id="error" role="status"></p>
+    <button id="go" type="button">開始疊加</button>
+    <p class="keys">
+      <kbd>⌘</kbd><kbd>⇧</kbd><kbd>H</kbd> 顯示或隱藏　
+      <kbd>⌘</kbd><kbd>⇧</kbd><kbd>R</kbd> 重新載入　
+      <kbd>⌘</kbd><kbd>⇧</kbd><kbd>Q</kbd> 結束<br><br>
+      視窗不會吃掉點擊。要關掉請用選單列圖示，或按結束快捷鍵。
+    </p>
+  </main>
+  <script>
+    const urlInput = document.getElementById('url');
+    const display = document.getElementById('display');
+    const error = document.getElementById('error');
+
+    window.overlay.onData((data) => {
+      urlInput.value = data.url || '';
+      error.textContent = data.error || '';
+      display.innerHTML = '';
+      (data.displays || []).forEach((item) => {
+        const option = document.createElement('option');
+        option.value = String(item.id);
+        const where = item.internal ? '內建' : '外接';
+        const primary = item.primary ? '，主畫面' : '';
+        option.textContent = `${where} ${item.width}×${item.height}${primary}`;
+        if (String(item.id) === String(data.displayId) || (!data.displayId && item.primary)) {
+          option.selected = true;
+        }
+        display.appendChild(option);
+      });
+    });
+    window.overlay.onError((message) => { error.textContent = message; });
+    document.getElementById('go').addEventListener('click', () => {
+      error.textContent = '';
+      window.overlay.start({ url: urlInput.value, displayId: display.value });
+    });
+  </script>
+</body>
+</html>

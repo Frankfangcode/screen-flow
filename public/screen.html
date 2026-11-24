@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>工作坊彈幕 · 投影</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect fill='%2316140f' width='16' height='16'/%3E%3Crect fill='%23e6a322' x='2' y='7' width='12' height='2'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/css/screen.css" />
+  <script>
+    if (new URLSearchParams(location.search).get('overlay') === '1') {
+      document.documentElement.classList.add('overlay');
+    }
+  </script>
+</head>
+<body>
+  <div id="stage">
+    <div id="slides" class="slides">
+      <section class="slide slide-1" data-page="1">
+        <p class="eyebrow"><span>2026.11.24</span><span>18:00 台北</span></p>
+        <h1>把一句話<br><span>丟上螢幕</span></h1>
+        <p class="lede">掃 QR code 加入。最多 50 字，選顏色和動畫，立刻飛過這面牆。</p>
+      </section>
+      <section class="slide slide-2" data-page="2" hidden>
+        <p class="eyebrow">怎麼參加</p>
+        <h1>四步就好。</h1>
+        <ol>
+          <li>掃螢幕上的 QR code</li>
+          <li>輸入一句話，最多 50 字</li>
+          <li>選字級、顏色、動畫</li>
+          <li>或直接按表情</li>
+        </ol>
+      </section>
+      <section class="slide slide-3" data-page="3" hidden>
+        <p class="eyebrow">一起保持友善</p>
+        <h1>不當的字<br>不會出現。</h1>
+        <p class="lede">每人 3 秒一則。主持人可以暫停，也可以把畫面上的字清掉。</p>
+      </section>
+    </div>
+    <canvas id="pdf-canvas" hidden></canvas>
+    <p id="pdf-status" class="pdf-status" hidden>正在載入 PDF…</p>
+    <iframe id="embed" title="嵌入的投影片" hidden></iframe>
+    <div id="layer" aria-hidden="true"></div>
+
+    <div id="qr" class="qr qr-full">
+      <img id="qr-img" alt="加入彈幕的 QR code" draggable="false" />
+      <p class="qr-kicker">掃碼加入</p>
+      <p class="qr-room" id="qr-room">----</p>
+      <p class="qr-url" id="qr-url"></p>
+    </div>
+
+    <div id="paused-pill" class="pill" hidden>暫停中</div>
+    <div id="viewers" class="viewers"><span class="dot"></span><span id="viewer-count">在線 0</span></div>
+    <p id="page-label" class="page-label">1 / 3</p>
+
+    <button id="host-toggle" type="button" aria-expanded="false" aria-controls="host">主持控制</button>
+    <aside id="host" hidden>
+      <form id="lock">
+        <h2>主持人</h2>
+        <label for="password">密碼</label>
+        <input id="password" type="password" autocomplete="current-password" />
+        <button type="submit">解鎖</button>
+        <p id="lock-error" class="err" role="status"></p>
+        <p class="hint">密碼是啟動伺服器時設定的 HOST_PASSWORD。</p>
+      </form>
+      <div id="controls" hidden>
+        <div class="row">
+          <button type="button" id="btn-pause">暫停</button>
+          <button type="button" id="btn-clear">清除彈幕</button>
+        </div>
+        <p class="label">QR code</p>
+        <div class="row">
+          <button type="button" data-qr="full">置中</button>
+          <button type="button" data-qr="corner">角落</button>
+          <button type="button" data-qr="hidden">隱藏</button>
+        </div>
+        <p class="label">背景</p>
+        <div class="row">
+          <button type="button" id="btn-slides">內建投影片</button>
+          <button type="button" id="btn-sample-pdf">範例 PDF</button>
+        </div>
+        <label class="file">
+          上傳 PDF
+          <input id="pdf-file" type="file" accept="application/pdf,.pdf" />
+        </label>
+        <form id="url-form">
+          <label for="embed-url">嵌入網址</label>
+          <input id="embed-url" type="url" placeholder="https://docs.google.com/presentation/…" />
+          <button type="submit">用這個網頁當背景</button>
+        </form>
+        <div class="row">
+          <button type="button" id="btn-prev">上一頁</button>
+          <button type="button" id="btn-next">下一頁</button>
+        </div>
+        <p class="hint">解鎖後可用方向鍵、Page Up / Down 或簡報筆換頁。網頁若是空白，代表該網站禁止被嵌入。PDF 不能有開啟密碼。</p>
+        <p class="label">敏感詞（一行一個）</p>
+        <textarea id="filter-box" spellcheck="false"></textarea>
+        <div class="row">
+          <button type="button" id="btn-filter">儲存敏感詞</button>
+          <button type="button" id="btn-filter-reset">恢復預設</button>
+        </div>
+        <p id="host-msg" class="err" role="status"></p>
+      </div>
+    </aside>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/js/screen.js"></script>
+</body>
+</html>
