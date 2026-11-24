@@ -197,6 +197,14 @@ window.__setOverlayQr = (on) => {
   setQrMode(qrOverride);
 };
 
+let danmakuVisible = true;
+window.__setDanmakuVisible = (on) => {
+  danmakuVisible = Boolean(on);
+  $('layer').style.visibility = danmakuVisible ? 'visible' : 'hidden';
+  return danmakuVisible;
+};
+window.__toggleDanmaku = () => window.__setDanmakuVisible(!danmakuVisible);
+
 function updateHostChrome(next) {
   const pause = $('btn-pause');
   if (pause) pause.textContent = next.paused ? '繼續' : '暫停';

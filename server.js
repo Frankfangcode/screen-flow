@@ -35,6 +35,7 @@ const samplePdfPath = path.join(publicDir, 'sample', 'workshop.pdf');
 
 const state = {
   paused: false,
+  interactionClosed: false,
   qrMode: 'full',
   filterWords: DEFAULT_WORDS.slice(),
   deck: 'slides',
@@ -48,6 +49,8 @@ const state = {
   backlog: [],
 };
 
+const commentLog = [];
+const COMMENT_LOG_MAX = 8000;
 const hostTokens = new Set();
 const rates = new Map();
 const msgWindow = [];
@@ -116,6 +119,18 @@ app.post('/api/host/login', (req, res) => {
   res.json({ ok: true, token, filter: state.filterWords, state: publicState() });
 });
 
+app.get('/api/export.csv', requireHost, (req, res) => {
+  const body = commentLog.map((row) => [
+    row.time, row.status, row.text, row.color, row.size, row.motion, row.clientId,
+  ].map(csvField).join(',')).join('\r\n');
+  const csv = `\uFEFF${['time', 'status', 'text', 'color', 'size', 'motion', 'clientId'].join(',')}\r\n${body}${body ? '\r\n' : ''}`;
+  const day = taipeiIso(new Date()).slice(0, 10);
+  res.set('Content-Type', 'text/csv; charset=utf-8');
+  res.set('Cache-Control', 'no-store');
+  res.set('Content-Disposition', `attachment; filename="danmaku-${day}.csv"`);
+  res.send(csv);
+});
+
 app.get('/api/pdf', (req, res) => {
   if (state.pdfKind === 'upload' && state.pdfBuf) {
     return sendPdf(res, state.pdfBuf, state.pdfName || 'slides.pdf');
@@ -151,6 +166,11 @@ app.post('/api/pdf', requireHost, (req, res) => {
 app.get('/screen', (req, res) => {
   res.set('Cache-Control', 'no-store');
   res.sendFile(path.join(publicDir, 'screen.html'));
+});
+
+app.get('/console', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(path.join(publicDir, 'console.html'));
 });
 
 app.use('/vendor/pdfjs', express.static(pdfjsDir, { setHeaders: setModuleType }));
@@ -189,8 +209,9 @@ io.on('connection', (socket) => {
     const room = String(body.room || '').trim().toUpperCase();
     if (room !== ROOM) return reply(ack, { ok: false, reason: 'room' });
     socket.data.clientId = sanitizeId(body.clientId) || crypto.randomBytes(8).toString('hex');
-    socket.data.role = body.role === 'screen' ? 'screen' : 'join';
-    if (socket.data.role === 'screen') socket.emit('backlog', state.backlog);
+    const role = body.role === 'screen' ? 'screen' : body.role === 'console' ? 'console' : 'join';
+    socket.data.role = role;
+    if (role === 'screen' || role === 'console') socket.emit('backlog', state.backlog);
     reply(ack, {
       ok: true,
       clientId: socket.data.clientId,
@@ -238,6 +259,13 @@ io.on('connection', (socket) => {
   socket.on('host-pause', (msg, ack) => {
     if (!hostOk(msg)) return reply(ack, { ok: false, reason: 'auth' });
     state.paused = Boolean(msg.paused);
+    broadcastState();
+    reply(ack, { ok: true, state: publicState() });
+  });
+
+  socket.on('host-interaction', (msg, ack) => {
+    if (!hostOk(msg)) return reply(ack, { ok: false, reason: 'auth' });
+    state.interactionClosed = Boolean(msg.closed);
     broadcastState();
     reply(ack, { ok: true, state: publicState() });
   });
@@ -334,7 +362,6 @@ process.on('SIGINT', shutdown);
 
 function acceptMessage(socket, msg) {
   if (!socket.data.clientId) return { ok: false, reason: 'hello' };
-  if (state.paused) return { ok: false, reason: 'paused' };
   const body = asObject(msg);
   const text = cleanText(body.text);
   const length = Array.from(text).length;
@@ -344,7 +371,19 @@ function acceptMessage(socket, msg) {
   const color = String(body.color || '').toUpperCase();
   if (!OPTIONS.colors.includes(color)) return { ok: false, reason: 'bad-color' };
   if (!OPTIONS.motions.includes(body.motion)) return { ok: false, reason: 'bad-motion' };
-  if (isBlocked(text, state.filterWords)) return { ok: false, reason: 'filter' };
+  if (isBlocked(text, state.filterWords)) {
+    rememberComment({
+      status: 'blocked',
+      text,
+      color,
+      size: body.size,
+      motion: body.motion,
+      clientId: socket.data.clientId,
+    });
+    return { ok: false, reason: 'filter' };
+  }
+  if (state.interactionClosed) return { ok: false, reason: 'closed' };
+  if (state.paused) return { ok: false, reason: 'paused' };
 
   const now = Date.now();
   const rec = clientRate(socket.data.clientId);
@@ -355,6 +394,14 @@ function acceptMessage(socket, msg) {
   }
   rec.msgAt = now;
   pruneRates();
+  rememberComment({
+    status: 'accepted',
+    text,
+    color,
+    size: body.size,
+    motion: body.motion,
+    clientId: socket.data.clientId,
+  });
   return {
     ok: true,
     item: {
@@ -370,6 +417,7 @@ function acceptMessage(socket, msg) {
 
 function acceptEmoji(socket, msg) {
   if (!socket.data.clientId) return { ok: false, reason: 'hello' };
+  if (state.interactionClosed) return { ok: false, reason: 'closed' };
   if (state.paused) return { ok: false, reason: 'paused' };
   const emoji = asObject(msg).emoji;
   if (!OPTIONS.emojis.includes(emoji)) return { ok: false, reason: 'bad-emoji' };
@@ -413,6 +461,7 @@ function guessPdfPages(buf) {
 function publicState() {
   return {
     paused: state.paused,
+    interactionClosed: state.interactionClosed,
     qrMode: state.qrMode,
     viewers: countViewers(),
     deck: {
@@ -561,6 +610,30 @@ function asObject(value) {
 
 function reply(ack, data) {
   if (typeof ack === 'function') ack(data);
+}
+
+function rememberComment(entry) {
+  commentLog.push({
+    time: taipeiIso(new Date()),
+    status: entry.status,
+    text: entry.text,
+    color: entry.color,
+    size: entry.size,
+    motion: entry.motion,
+    clientId: entry.clientId,
+  });
+  if (commentLog.length > COMMENT_LOG_MAX) commentLog.shift();
+}
+
+function taipeiIso(date) {
+  const shifted = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+  return shifted.toISOString().replace('Z', '+08:00');
+}
+
+function csvField(value) {
+  let text = String(value ?? '');
+  if (/^[=+\-@]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
 }
 
 function safeEqual(a, b) {

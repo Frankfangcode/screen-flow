@@ -36,6 +36,7 @@
   let color = '#FFE14A';
   let motion = 'scroll';
   let paused = false;
+  let interactionClosed = false;
   let sending = false;
   let sendSeq = 0;
   let socket = null;
@@ -59,6 +60,7 @@
 
   function reasonText(res) {
     const reason = res && res.reason;
+    if (reason === 'closed') return '主持人暫時關閉互動';
     if (reason === 'paused') return '主持人已暫停留言';
     if (reason === 'rate') return `太快了，請再等 ${Math.max(1, Math.ceil((res.retryInMs || 1000) / 1000))} 秒`;
     if (reason === 'busy') return '現在太多人同時送出，請再試一次';
@@ -107,13 +109,20 @@
     $('room-label').textContent = room;
   }
 
-  function applyPaused(next) {
-    paused = Boolean(next);
-    $('pause-note').hidden = !paused;
-    $('text').disabled = paused;
-    $('send').disabled = paused || sending;
+  function roomLocked() {
+    return paused || interactionClosed;
+  }
+
+  function applyRoomLock(next) {
+    paused = Boolean(next && next.paused);
+    interactionClosed = Boolean(next && next.interactionClosed);
+    const locked = roomLocked();
+    $('pause-note').hidden = !locked;
+    $('pause-note').textContent = interactionClosed ? '主持人暫時關閉互動' : '主持人已暫停留言';
+    $('text').disabled = locked;
+    $('send').disabled = locked || sending;
     document.querySelectorAll('#emojis button').forEach((button) => {
-      button.disabled = paused;
+      button.disabled = locked;
     });
   }
 
@@ -219,7 +228,7 @@
 
   function applyState(next) {
     if (!next) return;
-    applyPaused(next.paused);
+    applyRoomLock(next);
     if (typeof next.viewers === 'number') $('viewers').textContent = `在線 ${next.viewers}`;
   }
 
@@ -228,7 +237,7 @@
       feedback('連不上伺服器', 'bad');
       return;
     }
-    if (paused || sending) return;
+    if (roomLocked() || sending) return;
     const text = clampText($('text').value);
     $('text').value = text;
     updateCount();
@@ -243,7 +252,7 @@
       if (seq !== sendSeq) return;
       sendSeq += 1;
       sending = false;
-      $('send').disabled = paused;
+      $('send').disabled = roomLocked();
       feedback('沒有回應，請再試一次', 'bad');
     }, 4000);
     socket.emit('message', { text, size, color, motion }, (res) => {
@@ -251,7 +260,7 @@
       clearTimeout(timer);
       sendSeq += 1;
       sending = false;
-      $('send').disabled = paused;
+      $('send').disabled = roomLocked();
       if (!res || !res.ok) {
         feedback(reasonText(res), 'bad');
         return;
@@ -267,7 +276,7 @@
       feedback('連不上伺服器', 'bad');
       return;
     }
-    if (paused) return;
+    if (roomLocked()) return;
     socket.emit('emoji', { emoji }, (res) => {
       if (!res || !res.ok) {
         feedback(reasonText(res), 'bad');
@@ -282,7 +291,7 @@
   function lockEmoji(ms) {
     document.querySelectorAll('#emojis button').forEach((button) => { button.disabled = true; });
     setTimeout(() => {
-      if (!paused) document.querySelectorAll('#emojis button').forEach((button) => { button.disabled = false; });
+      if (!roomLocked()) document.querySelectorAll('#emojis button').forEach((button) => { button.disabled = false; });
     }, Math.max(200, ms));
   }
 

@@ -1,12 +1,15 @@
 {
-  "name": "danmaku-overlay",
+  "name": "workshop-danmaku-overlay",
+  "productName": "工作坊彈幕",
   "version": "1.0.0",
   "private": true,
   "description": "Transparent click-through danmaku overlay for the projector Mac.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg --publish never",
+    "dist": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --publish never",
+    "dist:dmg": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg --universal --publish never",
+    "dist:zip": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac zip --arm64 --x64 --publish never",
     "icon": "node make-icon.js"
   },
   "devDependencies": {
@@ -15,16 +18,19 @@
   },
   "build": {
     "appId": "tw.edu.workshop.danmaku-overlay",
-    "productName": "Danmaku Overlay",
+    "productName": "工作坊彈幕",
     "directories": { "output": "dist" },
     "files": ["main.js", "preload.js", "setup.html", "icon.png", "trayTemplate.png"],
     "mac": {
       "category": "public.app-category.utilities",
-      "target": ["dmg"],
       "icon": "icon.png",
       "identity": null,
-      "gatekeeperAssess": false
+      "gatekeeperAssess": false,
+      "target": [
+        { "target": "dmg", "arch": ["universal"] },
+        { "target": "zip", "arch": ["arm64", "x64"] }
+      ]
     },
-    "dmg": { "title": "Danmaku Overlay" }
+    "dmg": { "title": "工作坊彈幕" }
   }
 }

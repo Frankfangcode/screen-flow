@@ -91,6 +91,7 @@ Click the deck once. Arrow keys, Page Up / Page Down, and space then move its sl
 
 | Shortcut | Action |
 | --- | --- |
+| Command Shift C | Open the control console |
 | Command Shift H | Show or hide the overlay |
 | Command Shift J | Show or hide the QR |
 | Command Shift R | Reload |
@@ -104,7 +105,7 @@ npm install
 npm run dist
 ```
 
-`dist/` will contain `Danmaku Overlay-1.0.0.dmg` (unsigned). If Gatekeeper blocks it: right-click the app, choose **Open**, or run `xattr -dr com.apple.quarantine "/Applications/Danmaku Overlay.app"`.
+GitHub Actions publishes an unsigned **工作坊彈幕** release (universal dmg, plus arm64 and x64 zips). Install steps, in Chinese, are in `mac-overlay/README.md`. A local build uses `npm run dist:dmg` and `npm run dist:zip` in `mac-overlay`. First open is right-click → Open. If macOS says the app is damaged: `xattr -cr "/Applications/工作坊彈幕.app"`.
 
 macOS fullscreen spaces are a separate desktop. Keynote’s own fullscreen mode can hide an always-on-top window from another Space. Prefer a maximized window on the projector display, or the browser fallback below. `visibleOnFullScreen` is set, and it still is not reliable for every fullscreen app.
 
@@ -138,12 +139,12 @@ npm test
 
 ## Limitations
 
-- Memory only. A restart, a Render spin-down, or a new deploy drops comments, the uploaded PDF, pause, QR mode, and filter edits. Leave `/screen` open so the free instance stays awake, and set the deck after 17:15.
+- Memory only. A restart, a Render spin-down, or a new deploy drops comments, the CSV log, the uploaded PDF, pause, interaction-closed, QR mode, and filter edits. Leave `/screen` open so the free instance stays awake, and set the deck after 17:15. Export CSV before that happens.
 - Render’s free instance sleeps after 15 idle minutes and takes about a minute to wake. The first visitor sees Render’s loading page. Free hours are capped per workspace per month.
 - One room per process. The room code is not a secret; it is on the projector. The host password is the only control.
 - The per-person limit is a browser id. Someone who clears site data, or opens a private window, gets a new 3-second window. A global cap still protects the screen.
 - The word filter is a list, not a moderator. Short words can false-positive; unusual spellings can slip through.
 - PDF text is rendered by pdf.js in the projector browser. Password-protected PDFs fail. Very large image-heavy decks may be tight on a 512MB free instance because the file is held in memory (the cap is 12MB).
 - Many websites send `X-Frame-Options` and will not appear in the iframe. Google Slides embed links work when the deck is shared.
-- The Mac overlay is unsigned, Mac-only, and can lose to a native fullscreen Space. The `.dmg` has to be built on macOS (`npm run dist` in `mac-overlay`). There is no notarization.
+- The Mac app is unsigned and can lose to a native fullscreen Space. Releases are built by GitHub Actions. There is no notarization.
 - Comments are anonymous and public on the projector. They are not a private channel.

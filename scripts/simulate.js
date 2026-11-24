@@ -298,6 +298,50 @@ async function integration() {
   const resumed = await emitAck(control, 'host-pause', { token: auth.token, paused: false });
   assert(resumed.ok && resumed.state.paused === false, 'host can resume');
 
+  const exporter = await connect();
+  await hello(exporter, 'join', 'exportclient0001');
+  const kept = await emitAck(exporter, 'message', {
+    text: '匯出測試甲',
+    size: 'l',
+    color: '#FFE14A',
+    motion: 'bounce',
+  });
+  const blockedExport = await emitAck(exporter, 'message', {
+    text: '匯出 fuck 測試',
+    size: 'm',
+    color: '#FFFFFF',
+    motion: 'scroll',
+  });
+  assert(kept.ok, 'export sample comment is accepted');
+  assert(!blockedExport.ok && blockedExport.reason === 'filter', 'export sample slur is blocked');
+  const deniedCsv = await fetch(`${BASE}/api/export.csv`);
+  assert(deniedCsv.status === 401, 'csv export requires the host token');
+  const csvRes = await fetch(`${BASE}/api/export.csv`, { headers: { Authorization: `Bearer ${auth.token}` } });
+  const csvBuf = Buffer.from(await csvRes.arrayBuffer());
+  const csv = csvBuf.toString('utf8');
+  assert(csvRes.status === 200 && csvRes.headers.get('content-type').includes('text/csv'), 'csv export is text/csv');
+  assert(csvBuf[0] === 0xEF && csvBuf[1] === 0xBB && csvBuf[2] === 0xBF, 'csv starts with a UTF-8 BOM');
+  assert(csv.includes('time,status,text,color,size,motion,clientId'), 'csv has the header row');
+  assert(csv.includes('"accepted"') && csv.includes('"匯出測試甲"') && csv.includes('"exportclient0001"'), 'csv logs the accepted comment');
+  assert(csv.includes('"blocked"') && csv.includes('"匯出 fuck 測試"'), 'csv logs the blocked comment');
+  assert(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}\+08:00/.test(csv), 'csv time is Taipei ISO-8601');
+  exporter.close();
+
+  const closing = await emitAck(control, 'host-interaction', { token: auth.token, closed: true });
+  assert(closing.ok && closing.state.interactionClosed === true && closing.state.paused === false, 'interaction can close without pausing animation');
+  const quiet = await connect();
+  await hello(quiet, 'join', nid('quiet'));
+  const refused = await emitAck(quiet, 'message', {
+    text: '關閉中',
+    size: 'm',
+    color: '#FFFFFF',
+    motion: 'scroll',
+  });
+  assert(!refused.ok && refused.reason === 'closed', 'closed interaction rejects new comments');
+  quiet.close();
+  const reopened = await emitAck(control, 'host-interaction', { token: auth.token, closed: false });
+  assert(reopened.ok && reopened.state.interactionClosed === false, 'interaction can reopen');
+
   const beforeClear = cleared;
   const didClear = await emitAck(control, 'host-clear', { token: auth.token });
   await sleep(100);

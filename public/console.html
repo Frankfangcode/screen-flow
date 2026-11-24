@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>彈幕控制台</title>
+  <link rel="stylesheet" href="/css/console.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <p class="eyebrow">工作坊彈幕</p>
+        <h1>控制台</h1>
+      </div>
+      <p id="status" class="status">連線中</p>
+    </header>
+
+    <form id="login">
+      <label for="password">主持人密碼</label>
+      <input id="password" type="password" autocomplete="current-password" />
+      <button type="submit">記住並連線</button>
+      <p id="login-error" class="err" role="status"></p>
+      <p class="hint">密碼只存在這台 Mac，下次打開會自動連上。</p>
+    </form>
+
+    <section id="panel" hidden>
+      <button id="interaction" class="big" type="button" aria-pressed="false">暫停互動</button>
+      <p id="interaction-note" class="hint">開放時大家可以送留言。暫停互動會拒絕新留言，畫面上已經在飛的字不會停。</p>
+
+      <div class="grid">
+        <button id="clear" type="button">清空畫面</button>
+        <button id="danmaku" type="button">隱藏彈幕層</button>
+        <button id="qr" type="button">隱藏 QR</button>
+        <button id="export" type="button">匯出留言 CSV</button>
+      </div>
+
+      <form id="filter-form">
+        <label for="word">過濾詞</label>
+        <div class="row">
+          <input id="word" type="text" maxlength="40" placeholder="加入一個詞" autocomplete="off" />
+          <button type="submit">加入</button>
+        </div>
+      </form>
+
+      <p class="live"><span id="viewers">在線 0</span><span id="note"></span></p>
+      <h2>最近的留言</h2>
+      <ol id="recent"></ol>
+    </section>
+  </main>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/console.js"></script>
+</body>
+</html>
