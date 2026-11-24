@@ -75,6 +75,6 @@ function rounded(x, y, l, t, r, b, radius) {
   return tests.some(([cx, cy]) => (x - cx) ** 2 + (y - cy) ** 2 <= radius ** 2);
 }
 
-fs.writeFileSync(path.join(__dirname, 'icon.png'), png(256, 256, iconPixel));
+fs.writeFileSync(path.join(__dirname, 'icon.png'), png(1024, 1024, iconPixel));
 fs.writeFileSync(path.join(__dirname, 'trayTemplate.png'), png(32, 32, trayPixel));
 console.log('wrote icon.png and trayTemplate.png');
