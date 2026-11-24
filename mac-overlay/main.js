@@ -1,8 +1,10 @@
 'use strict';
 
 // Transparent, click-through, always-on-top window.
-// It loads /screen?overlay=1 so only danmaku is drawn over Keynote or PowerPoint.
+// It loads /screen?overlay=1 so danmaku and a corner QR sit over Keynote or PowerPoint.
 // Quit from the menu-bar icon, or press Command+Shift+Q.
+
+const DEFAULT_URL = 'https://workshop-danmaku-1124.onrender.com/screen?overlay=1';
 
 const {
   app,
@@ -72,6 +74,15 @@ function closeOverlay() {
   win.destroy();
 }
 
+function raiseOverlay(win) {
+  if (!win || win.isDestroyed()) return;
+  // screen-saver is above normal always-on-top windows, including many slideshows.
+  win.setAlwaysOnTop(true, 'screen-saver');
+  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  win.setFullScreenable(false);
+  win.moveTop();
+}
+
 function openOverlay(url, displayId) {
   closeOverlay();
   const display = findDisplay(displayId);
@@ -92,6 +103,7 @@ function openOverlay(url, displayId) {
     focusable: false,
     enableLargerThanScreen: true,
     backgroundColor: '#00000000',
+    type: process.platform === 'darwin' ? 'panel' : 'normal',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -100,9 +112,9 @@ function openOverlay(url, displayId) {
     },
   });
   overlay.setIgnoreMouseEvents(true);
-  overlay.setAlwaysOnTop(true, 'screen-saver');
-  overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  overlay.setFullScreenable(false);
+  raiseOverlay(overlay);
+  overlay.on('show', () => raiseOverlay(overlay));
+  overlay.webContents.on('did-finish-load', () => raiseOverlay(overlay));
   overlay.loadURL(url);
   overlay.webContents.on('did-fail-load', (_event, code, desc, failedUrl, isMain) => {
     if (!isMain || code === -3) return;
@@ -110,6 +122,13 @@ function openOverlay(url, displayId) {
     openSetup(`無法打開 ${failedUrl || url}（${desc || code}）`);
   });
   if (setup && !setup.isDestroyed()) setup.close();
+}
+
+function toggleQr() {
+  if (!overlay || overlay.isDestroyed()) return;
+  overlay.webContents.executeJavaScript(
+    'window.__toggleOverlayQr && window.__toggleOverlayQr()'
+  ).catch(() => {});
 }
 
 function openSetup(errorText) {
@@ -139,7 +158,7 @@ function openSetup(errorText) {
     const cfg = readConfig();
     const primary = screen.getPrimaryDisplay();
     setup.webContents.send('setup-data', {
-      url: cfg.url || process.env.DANMAKU_URL || 'http://127.0.0.1:4721/screen?overlay=1',
+      url: cfg.url || process.env.DANMAKU_URL || DEFAULT_URL,
       displayId: cfg.displayId,
       error: errorText || '',
       displays: screen.getAllDisplays().map((display) => ({
@@ -161,6 +180,7 @@ function createTray() {
   tray.setToolTip('彈幕疊加');
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: '顯示或隱藏', click: toggleOverlay },
+    { label: '顯示或隱藏 QR', click: toggleQr },
     {
       label: '重新載入',
       click: () => {
@@ -177,11 +197,14 @@ function toggleOverlay() {
   if (!overlay || overlay.isDestroyed()) {
     const cfg = readConfig();
     if (cfg.url) openOverlay(cfg.url, cfg.displayId);
-    else openSetup('');
+    else openOverlay(DEFAULT_URL, cfg.displayId);
     return;
   }
   if (overlay.isVisible()) overlay.hide();
-  else overlay.showInactive();
+  else {
+    overlay.showInactive();
+    raiseOverlay(overlay);
+  }
 }
 
 function boot() {
@@ -205,6 +228,7 @@ function boot() {
     if (process.platform === 'darwin' && app.dock) app.dock.hide();
     createTray();
     globalShortcut.register('CommandOrControl+Shift+H', toggleOverlay);
+    globalShortcut.register('CommandOrControl+Shift+J', toggleQr);
     globalShortcut.register('CommandOrControl+Shift+Q', () => app.quit());
     globalShortcut.register('CommandOrControl+Shift+R', () => {
       if (overlay && !overlay.isDestroyed()) overlay.webContents.reload();
@@ -220,8 +244,7 @@ function boot() {
         return;
       }
     }
-    if (cfg.url) openOverlay(cfg.url, cfg.displayId);
-    else openSetup('');
+    openOverlay(cfg.url || DEFAULT_URL, cfg.displayId);
   });
 
   app.on('will-quit', () => globalShortcut.unregisterAll());

@@ -1,5 +1,25 @@
 const $ = (id) => document.getElementById(id);
+const params = new URLSearchParams(location.search);
 const overlay = document.documentElement.classList.contains('overlay');
+const DEFAULT_DECK = 'https://ai-grad-workshop-1124.onrender.com/';
+
+function queryBg() {
+  if (overlay) return '';
+  const raw = params.get('bg');
+  if (!raw) return '';
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return '';
+    return url.toString();
+  } catch (err) {
+    return '';
+  }
+}
+
+let pinnedBg = queryBg();
+let qrOverride = null;
+if (overlay) qrOverride = params.get('qr') === '0' ? 'hidden' : 'corner';
+else if (pinnedBg) qrOverride = 'corner';
 const layer = $('layer');
 const seen = new Set();
 const lanes = [];
@@ -132,13 +152,50 @@ function removeLater(el, ms, after) {
 }
 
 function setQrMode(mode) {
+  const effective = qrOverride || mode || 'full';
   const qr = $('qr');
   qr.classList.remove('qr-full', 'qr-corner', 'qr-hidden');
-  qr.classList.add(mode === 'corner' ? 'qr-corner' : mode === 'hidden' ? 'qr-hidden' : 'qr-full');
+  qr.classList.add(effective === 'corner' ? 'qr-corner' : effective === 'hidden' ? 'qr-hidden' : 'qr-full');
+  document.documentElement.classList.toggle('qr-off', overlay && effective === 'hidden');
   document.querySelectorAll('[data-qr]').forEach((button) => {
-    button.setAttribute('aria-pressed', String(button.dataset.qr === mode));
+    button.setAttribute('aria-pressed', String(button.dataset.qr === effective));
   });
 }
+
+function embedShowing() {
+  if (overlay) return false;
+  const frame = $('embed');
+  return Boolean(frame && !frame.hidden && frame.getAttribute('src'));
+}
+
+function focusDeck() {
+  const frame = $('embed');
+  if (!embedShowing()) return;
+  try {
+    frame.contentWindow.focus();
+  } catch (err) {
+    frame.focus();
+  }
+}
+
+function forwardKey(key) {
+  const frame = $('embed');
+  if (!frame || !frame.contentWindow) return;
+  try {
+    frame.contentWindow.postMessage({ source: 'workshop-danmaku', type: 'key', key }, '*');
+  } catch (err) { /* cross-origin post is still best-effort */ }
+  focusDeck();
+}
+
+window.__toggleOverlayQr = () => {
+  qrOverride = qrOverride === 'hidden' ? 'corner' : 'hidden';
+  setQrMode(qrOverride);
+  return qrOverride !== 'hidden';
+};
+window.__setOverlayQr = (on) => {
+  qrOverride = on ? 'corner' : 'hidden';
+  setQrMode(qrOverride);
+};
 
 function updateHostChrome(next) {
   const pause = $('btn-pause');
@@ -153,7 +210,8 @@ function applyState(next) {
   $('paused-pill').hidden = !next.paused;
   $('viewer-count').textContent = `在線 ${next.viewers || 0}`;
   updateHostChrome(next);
-  const deck = next.deck || { type: 'slides', page: 1, pageCount: 3 };
+  let deck = next.deck || { type: 'slides', page: 1, pageCount: 3 };
+  if (pinnedBg) deck = { type: 'url', url: pinnedBg, page: 1, pageCount: 1, rev: deck.rev || 0 };
   const paging = deck.type !== 'url';
   $('page-label').hidden = !paging;
   $('page-label').textContent = paging ? `${deck.page || 1} / ${deck.pageCount || 1}` : '';
@@ -187,6 +245,7 @@ async function updateDeck(deck) {
     if (deck.url && frame.src !== deck.url) frame.src = deck.url;
     shown = signature;
     inflightDeck = '';
+    focusDeck();
     return;
   }
   if (overlay) {
@@ -340,6 +399,7 @@ function hostEmit(event, payload, okText) {
       hostMsg(res && res.reason === 'bad-url' ? '這個網址不能嵌入' : '沒有套用');
       return;
     }
+    if (event === 'host-deck') pinnedBg = '';
     if (res.state) applyState(res.state);
     if (Array.isArray(res.words)) $('filter-box').value = res.words.join('\n');
     if (okText) hostMsg(okText);
@@ -433,7 +493,11 @@ function bindHost() {
   });
   $('btn-clear').addEventListener('click', () => hostEmit('host-clear', {}, '已清除'));
   document.querySelectorAll('[data-qr]').forEach((button) => {
-    button.addEventListener('click', () => hostEmit('host-qr', { mode: button.dataset.qr }, 'QR 已更新'));
+    button.addEventListener('click', () => {
+      qrOverride = button.dataset.qr;
+      setQrMode(qrOverride);
+      hostEmit('host-qr', { mode: button.dataset.qr }, 'QR 已更新');
+    });
   });
   $('btn-slides').addEventListener('click', () => hostEmit('host-deck', { type: 'slides' }, '已改為內建投影片'));
   $('btn-sample-pdf').addEventListener('click', () => hostEmit('host-deck', { type: 'pdf', pdf: 'sample' }, '已改為範例 PDF'));
@@ -455,7 +519,10 @@ function bindHost() {
         hostMsg(data.error || '上傳失敗');
         return;
       }
-      if (data.state) applyState(data.state);
+      if (data.state) {
+        pinnedBg = '';
+        applyState(data.state);
+      }
       hostMsg('PDF 已放上背景');
     } catch (err) {
       hostMsg('上傳失敗');
@@ -474,14 +541,25 @@ function bindHost() {
   $('btn-filter-reset').addEventListener('click', () => hostEmit('host-filter', { reset: true }, '已恢復預設'));
 }
 
+const DECK_KEYS = new Set([
+  'ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp',
+  'PageDown', 'PageUp', ' ', 'Enter', 'Backspace', 'Home', 'End', 'f', 'F',
+]);
+
 window.addEventListener('keydown', (event) => {
   if (overlay) return;
   const tag = event.target && event.target.tagName;
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'BUTTON' || tag === 'SELECT') return;
-  if (event.key === 'h' || event.key === 'H') {
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  if ((event.key === 'h' || event.key === 'H') && tag !== 'BUTTON') {
     togglePanel();
+    if (!panelOpen) focusDeck();
     return;
   }
+  if (embedShowing() && DECK_KEYS.has(event.key)) {
+    forwardKey(event.key);
+    return;
+  }
+  if (tag === 'BUTTON') return;
   if (!hostToken) return;
   const next = ['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(event.key);
   const prev = ['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(event.key);
@@ -499,6 +577,7 @@ window.addEventListener('resize', () => {
   updateDeck(current.deck);
 });
 
+$('embed').addEventListener('load', () => focusDeck());
 bindHost();
 loadJoinInfo().then(connect).catch((err) => {
   console.error(err);

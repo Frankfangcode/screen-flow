@@ -39,7 +39,7 @@
     </div>
     <canvas id="pdf-canvas" hidden></canvas>
     <p id="pdf-status" class="pdf-status" hidden>正在載入 PDF…</p>
-    <iframe id="embed" title="嵌入的投影片" hidden></iframe>
+    <iframe id="embed" title="嵌入的投影片" hidden tabindex="0" allow="fullscreen" allowfullscreen></iframe>
     <div id="layer" aria-hidden="true"></div>
 
     <div id="qr" class="qr qr-full">
@@ -85,14 +85,14 @@
         </label>
         <form id="url-form">
           <label for="embed-url">嵌入網址</label>
-          <input id="embed-url" type="url" placeholder="https://docs.google.com/presentation/…" />
+          <input id="embed-url" type="url" spellcheck="false" value="https://ai-grad-workshop-1124.onrender.com/" />
           <button type="submit">用這個網頁當背景</button>
         </form>
         <div class="row">
           <button type="button" id="btn-prev">上一頁</button>
           <button type="button" id="btn-next">下一頁</button>
         </div>
-        <p class="hint">解鎖後可用方向鍵、Page Up / Down 或簡報筆換頁。網頁若是空白，代表該網站禁止被嵌入。PDF 不能有開啟密碼。</p>
+        <p class="hint">嵌入網頁時先點一下簡報。方向鍵、Page Up / Down、空白鍵會翻頁，F 全螢幕。QR 可改成角落或隱藏。網頁若是空白，代表該網站禁止被嵌入。PDF 不能有開啟密碼。</p>
         <p class="label">敏感詞（一行一個）</p>
         <textarea id="filter-box" spellcheck="false"></textarea>
         <div class="row">

@@ -417,9 +417,9 @@ html.overlay #slides,
 html.overlay #pdf-canvas,
 html.overlay #embed,
 html.overlay #pdf-status,
-html.overlay #qr,
 html.overlay #viewers,
 html.overlay #page-label,
 html.overlay #paused-pill,
 html.overlay #host,
 html.overlay #host-toggle { display: none !important; }
+html.overlay.qr-off #qr { display: none !important; }

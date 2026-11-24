@@ -79,13 +79,20 @@ npm install
 npm start
 ```
 
-Paste the server address (`http://127.0.0.1:4721/screen?overlay=1` or the Render URL). Pick the projector display if there is more than one. **開始疊加**.
+The address is already filled in: `https://workshop-danmaku-1124.onrender.com/screen?overlay=1`. Pick the projector display if there is more than one. **開始疊加**.
 
-The window does not take clicks, so Keynote keeps the clicker. A menu-bar icon (the amber-bar template) can hide, reload, change the URL, or quit.
+The window does not take clicks, so Keynote or PowerPoint keeps the clicker. A corner QR joins the room; the menu-bar icon can hide that QR, reload, change the URL, or quit. 中文步驟在 `mac-overlay/README.md`。
+
+To put danmaku over the web deck instead of Keynote, open this in the projector browser (not the overlay):
+
+`https://workshop-danmaku-1124.onrender.com/screen?bg=https%3A%2F%2Fai-grad-workshop-1124.onrender.com%2F`
+
+Click the deck once. Arrow keys, Page Up / Page Down, and space then move its slides. F toggles fullscreen. The QR stays in the corner until the host switches it.
 
 | Shortcut | Action |
 | --- | --- |
-| Command Shift H | Show or hide |
+| Command Shift H | Show or hide the overlay |
+| Command Shift J | Show or hide the QR |
 | Command Shift R | Reload |
 | Command Shift Q | Quit |
 
